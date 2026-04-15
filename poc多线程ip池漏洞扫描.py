@@ -5,7 +5,6 @@ import threading
 from concurrent.futures import ThreadPoolExecutor       #导入线程池
 import random
 import time
-requests.packages.urllib3.disable_warnings()
 
 # ---------- 代理池配置 ----------
 PROXY_API = "https://proxy.scdn.io/api/get_proxy.php"
