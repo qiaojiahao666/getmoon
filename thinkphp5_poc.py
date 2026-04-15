@@ -25,9 +25,15 @@ def fetch_proxies(count=PROXY_COUNT, protocol="http"):
                 proxies = data["data"].get("proxies", [])
                 print(f"[*] 获取到 {len(proxies)} 个代理")
                 return proxies
-    except Exception as e:
-        print(f"[!] 获取代理失败: {e}")
-    return []
+     except requests.exceptions.Timeout:
+         pass  # 超时跳过,函数中不可使用continue
+     except requests.exceptions.ConnectionError:
+         pass  # 连不上跳过
+     except requests.exceptions.ProxyError:
+         pass  # 代理坏了跳过
+     except requests.exceptions.RequestException:
+         pass  # 所有其他错误兜底
+     return []
 
 def get_proxy():
     """获取一个代理，如果列表为空则重新拉取"""
